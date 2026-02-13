@@ -1,0 +1,13 @@
+{
+  "name": "rbac-multi-app",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev:api": "npm --prefix apps/api run dev",
+    "dev:admin": "npm --prefix apps/admin run dev",
+    "dev:user": "npm --prefix apps/user run dev",
+    "build": "npm --prefix apps/api run build && npm --prefix apps/admin run build && npm --prefix apps/user run build",
+    "lint": "npm --prefix apps/api run lint && npm --prefix apps/admin run lint && npm --prefix apps/user run lint",
+    "test": "npm --prefix apps/api run test && npm --prefix apps/admin run test && npm --prefix apps/user run test"
+  }
+}
