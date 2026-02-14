@@ -70,6 +70,7 @@ router.patch(
     if (!before) {
       return res.status(404).json({ success: false, code: 'NOT_FOUND', message: 'Role not found' });
     }
+    // Why: Protecting SuperAdmin role prevents accidental lockout of core admin capabilities.
     if (before.name === SYSTEM_ROLES.SUPERADMIN) {
       return res.status(400).json({
         success: false,
@@ -184,6 +185,7 @@ router.patch(
   requirePermission('roles:assign'),
   asyncHandler(async (req, res) => {
     const payload = z.object({ roleIds: z.array(z.string()) }).parse(req.body);
+    // Why: Single-role policy keeps effective permissions predictable and auditable.
     if (payload.roleIds.length !== 1) {
       return res.status(400).json({
         success: false,
@@ -196,6 +198,7 @@ router.patch(
     if (!targetUser) {
       return res.status(404).json({ success: false, code: 'NOT_FOUND', message: 'User not found' });
     }
+    // Why: SuperAdmin user protection stops privilege-downgrade attacks or mistakes.
     const isSuperAdminUser = (targetUser.roleIds || []).some((role) => role?.name === SYSTEM_ROLES.SUPERADMIN);
     if (isSuperAdminUser) {
       return res.status(400).json({
@@ -214,6 +217,7 @@ router.patch(
       .select('-password')
       .populate('roleIds');
 
+    // Behavior: Revoke active refresh sessions so new role takes effect immediately.
     await RefreshToken.updateMany({ userId: user._id, revokedAt: null }, { $set: { revokedAt: new Date() } });
     await logAudit(req, {
       module: 'roles',

@@ -6,6 +6,7 @@ export function ProtectedRoute({ children }) {
   const { isAuthenticated, loading } = useAuth();
   const location = useLocation();
 
+  // Why: Hold navigation until auth bootstrap finishes to avoid false redirects.
   if (loading) {
     return (
       <Box sx={{ minHeight: '100vh', display: 'grid', placeItems: 'center' }}>
@@ -14,6 +15,7 @@ export function ProtectedRoute({ children }) {
     );
   }
 
+  // Why: Backend still protects APIs, but route-level guard improves UX and safety.
   if (!isAuthenticated) {
     return <Navigate to="/login" replace state={{ from: location }} />;
   }

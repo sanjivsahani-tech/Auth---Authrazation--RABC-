@@ -24,3 +24,7 @@ Note: first admin user is **not auto-created** from env.
 - `GET /api/v1/auth/admin-signup-status`
 - `POST /api/v1/auth/admin-signup`
 - `POST /api/v1/auth/login` (blocked with `SIGNUP_REQUIRED` until first signup)
+
+## Detailed Docs
+- Architecture guide: `apps/api/ARCHITECTURE.md`
+- API reference: `apps/api/API_REFERENCE.md`

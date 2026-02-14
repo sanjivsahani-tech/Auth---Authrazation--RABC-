@@ -1,9 +1,11 @@
 import dotenv from 'dotenv';
 
+// Why: Load runtime configuration from .env before any module reads process.env.
 dotenv.config();
 
 const required = ['MONGO_URI', 'JWT_ACCESS_SECRET', 'JWT_REFRESH_SECRET'];
 for (const key of required) {
+  // Why: Fail fast on startup if critical secrets/connection strings are missing.
   if (!process.env[key]) {
     throw new Error(`Missing required env var: ${key}`);
   }

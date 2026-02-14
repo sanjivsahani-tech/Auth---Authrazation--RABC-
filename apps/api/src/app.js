@@ -11,9 +11,12 @@ import { errorHandler, notFound } from './middleware/error.js';
 export function createApp() {
   const app = express();
 
+  // Why: Helmet sets secure HTTP headers to reduce common web attack surface.
   app.use(helmet());
   app.use(
     cors({
+      // Why: API must only accept browser origins that are explicitly allowed.
+      // Risk: Open CORS policy can expose authenticated cookie flows to untrusted origins.
       origin: (origin, cb) => {
         if (!origin || env.corsOrigins.includes(origin)) return cb(null, true);
         return cb(new Error('Not allowed by CORS'));
@@ -32,6 +35,7 @@ export function createApp() {
     legacyHeaders: false,
   });
 
+  // Why: Auth endpoints are brute-force targets and should be rate-limited separately.
   app.use('/api/v1/auth/login', authLimiter);
   app.use('/api/v1/auth/refresh', authLimiter);
   app.use('/api/v1', routes);

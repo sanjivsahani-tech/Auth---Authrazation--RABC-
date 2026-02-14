@@ -12,6 +12,7 @@ router.get(
   requireAuth,
   requirePermission('audit:view'),
   asyncHandler(async (req, res) => {
+    // Why: Audit list supports free-text filtering so admins can quickly trace actions.
     const { page, limit, skip, sort, search } = parseListQuery(req.query);
     const filter = search
       ? {

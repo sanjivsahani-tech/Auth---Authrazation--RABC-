@@ -2,6 +2,7 @@ import { AuditLog } from '../models/AuditLog.js';
 
 export async function logAudit(req, { module, action, entityId, before, after }) {
   try {
+    // Why: Audit records create an immutable operational trail for sensitive changes.
     await AuditLog.create({
       actorUserId: req.user?._id,
       module,
@@ -17,6 +18,7 @@ export async function logAudit(req, { module, action, entityId, before, after })
       },
     });
   } catch {
+    // Why: Business action should not fail only because audit persistence failed.
     // Best-effort logging only.
   }
 }

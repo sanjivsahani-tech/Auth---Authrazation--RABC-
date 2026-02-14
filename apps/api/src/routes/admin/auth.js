@@ -27,10 +27,12 @@ const adminSignupSchema = z.object({
 });
 
 async function getSuperAdminRole() {
+  // Why: First signup flow must always bind to the system SuperAdmin role.
   return Role.findOne({ name: SYSTEM_ROLES.SUPERADMIN });
 }
 
 async function hasAnyAdmin() {
+  // Why: Signup gate depends on existence of at least one SuperAdmin user.
   const superRole = await getSuperAdminRole();
   if (!superRole) {
     return false;
@@ -40,6 +42,7 @@ async function hasAnyAdmin() {
 }
 
 function cookieOptions() {
+  // Why: Refresh token is cookie-based and should not be accessible from JS.
   return {
     httpOnly: true,
     secure: env.cookieSecure,
@@ -49,6 +52,7 @@ function cookieOptions() {
 }
 
 async function issueTokens(req, userId) {
+  // Why: Refresh token is stored hashed so DB leaks cannot expose active sessions.
   const accessToken = signAccessToken({ sub: String(userId) });
   const rawRefreshToken = makeOpaqueToken();
   const tokenHash = hashToken(rawRefreshToken);
@@ -68,6 +72,7 @@ async function issueTokens(req, userId) {
 router.post(
   '/login',
   asyncHandler(async (req, res) => {
+    // Why: Enforce bootstrap order so system is initialized via first admin signup.
     if (!(await hasAnyAdmin())) {
       return res.status(403).json({
         success: false,
@@ -121,6 +126,7 @@ router.get(
 router.post(
   '/admin-signup',
   asyncHandler(async (req, res) => {
+    // Why: Signup is intentionally one-time; subsequent attempts must be blocked.
     const payload = adminSignupSchema.parse(req.body);
     if (await hasAnyAdmin()) {
       return res.status(409).json({
@@ -185,6 +191,7 @@ router.post(
 router.post(
   '/refresh',
   asyncHandler(async (req, res) => {
+    // Behavior: Refresh token rotation revokes current token and issues a new one.
     const rawRefreshToken = req.cookies.refreshToken;
     if (!rawRefreshToken) {
       return res.status(401).json({ success: false, code: 'INVALID_REFRESH', message: 'Refresh token missing' });
@@ -214,6 +221,7 @@ router.post(
 router.post(
   '/logout',
   asyncHandler(async (req, res) => {
+    // Why: Logout revokes refresh token so old browser session cannot mint new access tokens.
     const rawRefreshToken = req.cookies.refreshToken;
     if (rawRefreshToken) {
       await RefreshToken.updateOne({ tokenHash: hashToken(rawRefreshToken) }, { $set: { revokedAt: new Date() } });

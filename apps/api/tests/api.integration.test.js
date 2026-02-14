@@ -19,6 +19,7 @@ const firstAdminPayload = {
 };
 
 async function signupFirstAdmin() {
+  // Why: Reusable helper avoids repeating signup boilerplate across scenarios.
   const res = await request(app).post('/api/v1/auth/admin-signup').send(firstAdminPayload);
   return {
     token: res.body?.data?.accessToken,
@@ -38,6 +39,7 @@ beforeEach(async () => {
 });
 
 describe('Auth + first admin signup gate', () => {
+  // Why: These tests lock bootstrap security behavior before normal login flow starts.
   it('returns canSignup=true when no admin exists', async () => {
     const res = await request(app).get('/api/v1/auth/admin-signup-status');
     expect(res.status).toBe(200);
@@ -112,6 +114,7 @@ describe('Auth + first admin signup gate', () => {
 });
 
 describe('RBAC + CRUD after admin signup', () => {
+  // Why: These tests verify permission enforcement, conflict handling, and session controls.
   it('returns 403 when user lacks permission', async () => {
     const admin = await signupFirstAdmin();
 

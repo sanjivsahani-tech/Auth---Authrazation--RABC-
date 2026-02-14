@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { api, configureApi } from '../api/client';
 
 const AuthContext = createContext(null);
+// Why: Separate key avoids overwriting admin session in same browser profile.
 const TOKEN_KEY = 'user_access_token';
 
 export function AuthProvider({ children }) {
@@ -10,6 +11,7 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Why: Centralized refresh handling keeps page components free from auth boilerplate.
     configureApi({
       tokenProvider: () => token,
       unauthorizedHandler: async () => {
@@ -30,6 +32,7 @@ export function AuthProvider({ children }) {
   }, [token]);
 
   useEffect(() => {
+    // Why: Rehydrate logged-in user on reload so permission-based UI stays correct.
     async function init() {
       if (!token) {
         setLoading(false);
@@ -49,6 +52,7 @@ export function AuthProvider({ children }) {
   }, [token]);
 
   async function login(email, password) {
+    // Behavior: Access token is persisted so refresh survives browser reload.
     const { data } = await api.post('/auth/login', { email, password });
     const accessToken = data.data.accessToken;
     localStorage.setItem(TOKEN_KEY, accessToken);
@@ -57,6 +61,7 @@ export function AuthProvider({ children }) {
   }
 
   async function logout() {
+    // Why: Clearing local token state immediately avoids using stale credentials.
     try {
       await api.post('/auth/logout');
     } catch {

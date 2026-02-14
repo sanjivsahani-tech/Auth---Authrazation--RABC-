@@ -24,6 +24,7 @@ import { api } from '../api/client';
 import { useAuth } from '../auth/AuthProvider';
 
 function toForm(fields, source = null) {
+  // Why: Shared mapper keeps create/edit dialogs aligned with field metadata.
   return Object.fromEntries(
     fields.map((f) => {
       const raw = source ? source[f.name] : f.defaultValue;
@@ -33,6 +34,7 @@ function toForm(fields, source = null) {
 }
 
 function mapApiError(err, fallback) {
+  // Why: Consistent error translation gives predictable UX across all CRUD modules.
   const status = err?.response?.status;
   const code = err?.response?.data?.code;
   if (status === 403) return 'You do not have permission for this action.';
@@ -47,6 +49,7 @@ export default function EntityCrudPage({ title, endpoint, fields }) {
   const { user } = useAuth();
   const permissions = useMemo(() => new Set(user?.permissions || []), [user?.permissions]);
 
+  // Why: UI-level permission gates reduce invalid actions before request is sent.
   const canView = permissions.has(`${moduleName}:view`);
   const canCreate = permissions.has(`${moduleName}:create`);
   const canUpdate = permissions.has(`${moduleName}:update`);
@@ -69,6 +72,7 @@ export default function EntityCrudPage({ title, endpoint, fields }) {
     queryKey,
     enabled: canView,
     queryFn: async () => {
+      // Behavior: Backend pagination is 1-based, UI pagination is 0-based.
       const params = {
         page: page + 1,
         limit: rowsPerPage,
@@ -84,6 +88,7 @@ export default function EntityCrudPage({ title, endpoint, fields }) {
   const createM = useMutation({
     mutationFn: (payload) => api.post(`/${endpoint}`, payload),
     onSuccess: () => {
+      // Why: Invalidate module key so list reflects server truth after mutation.
       qc.invalidateQueries({ queryKey: [endpoint] });
       setOpen(false);
       setError('');
@@ -109,6 +114,7 @@ export default function EntityCrudPage({ title, endpoint, fields }) {
   const deleteM = useMutation({
     mutationFn: (id) => api.delete(`/${endpoint}/${id}`),
     onSuccess: () => {
+      // Why: Move back one page when deleting last row on current page.
       const currentItems = listQ.data?.items || [];
       if (currentItems.length === 1 && page > 0) {
         setPage((p) => p - 1);
@@ -148,6 +154,7 @@ export default function EntityCrudPage({ title, endpoint, fields }) {
   };
 
   const applySearch = () => {
+    // Why: Search resets to first page to avoid requesting out-of-range pages.
     setPage(0);
     setSearch(searchInput.trim());
   };

@@ -24,6 +24,7 @@ import { api } from '../api/client';
 import { useAuth } from '../auth/AuthProvider';
 
 function mapApiError(err, fallback) {
+  // Why: Product module shows user-friendly messages for common auth/conflict failures.
   const status = err?.response?.status;
   const code = err?.response?.data?.code;
   if (status === 403) return 'You do not have permission for this action.';
@@ -46,6 +47,7 @@ export default function ProductsPage() {
   const { user } = useAuth();
   const permissions = useMemo(() => new Set(user?.permissions || []), [user?.permissions]);
 
+  // Why: Product actions can be granted independently, so each button checks its own permission.
   const canView = permissions.has('products:view');
   const canCreate = permissions.has('products:create');
   const canUpdate = permissions.has('products:update');
@@ -68,6 +70,7 @@ export default function ProductsPage() {
     queryKey,
     enabled: canView,
     queryFn: async () => {
+      // Behavior: Convert UI table state into backend-compatible query params.
       const params = {
         page: page + 1,
         limit: rowsPerPage,
@@ -93,6 +96,7 @@ export default function ProductsPage() {
   const createM = useMutation({
     mutationFn: (payload) => api.post('/products', payload),
     onSuccess: () => {
+      // Why: Product list and counts should immediately reflect write operations.
       qc.invalidateQueries({ queryKey: ['products'] });
       setOpen(false);
       setError('');
@@ -145,6 +149,7 @@ export default function ProductsPage() {
   };
 
   const onOpenEdit = (p) => {
+    // Why: API may return populated refs; form needs raw IDs for select inputs.
     setEditingId(p._id);
     setForm({
       sku: p.sku || '',
@@ -164,6 +169,7 @@ export default function ProductsPage() {
   };
 
   const applySearch = () => {
+    // Why: Reset page while applying filters to keep pagination consistent.
     setPage(0);
     setSearch(searchInput.trim());
   };

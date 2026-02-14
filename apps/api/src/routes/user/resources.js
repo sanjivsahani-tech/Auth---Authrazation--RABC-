@@ -11,10 +11,15 @@ import { Product } from '../../models/Product.js';
 import { Customer } from '../../models/Customer.js';
 
 function createCrudRoutes({ router, model, moduleName, createSchema, searchFields = ['name'], populate = '' }) {
+  // Why: Shared CRUD route factory keeps module behavior consistent across resources.
+  // Risk: Divergent per-module implementations can introduce authorization and audit gaps.
   router.post(
     `/${moduleName}`,
+    // consistent auth and permission checks ensure all routes are protected and auditable, preventing accidental public access or unlogged operations.
     requireAuth,
+    // requirePermission checks follow a predictable pattern based on moduleName and action, simplifying role configuration and reducing chances of misconfiguration.
     requirePermission(`${moduleName}:create`),
+    // asyncHandler wrapper centralizes error handling for async route handlers, preventing unhandled promise rejections and ensuring consistent error responses.
     asyncHandler(async (req, res) => {
       const payload = createSchema.parse(req.body);
       const item = await model.create(payload);
@@ -25,9 +30,12 @@ function createCrudRoutes({ router, model, moduleName, createSchema, searchField
 
   router.get(
     `/${moduleName}`,
+    // requireAuth and requirePermission for 'view' ensure that only authorized users can access the list endpoints, which often return large amounts of data and may include sensitive information.
     requireAuth,
+    // permission keys follow a consistent naming convention based on moduleName and action, making it easier to manage permissions across different resources and reducing the risk of misconfiguration that could lead to unauthorized access.
     requirePermission(`${moduleName}:view`),
     asyncHandler(async (req, res) => {
+      // Behavior: Centralized pagination parser gives uniform list contracts for all modules.
       const { page, limit, skip, sort, search } = parseListQuery(req.query);
       const filter =
         search && searchFields.length
@@ -35,6 +43,7 @@ function createCrudRoutes({ router, model, moduleName, createSchema, searchField
           : {};
 
       const query = model.find(filter).sort(sort).skip(skip).limit(limit);
+      // Why: Product responses need populated category/shelf references for frontend forms.
       if (populate) query.populate(populate);
 
       const [items, total] = await Promise.all([query.lean(), model.countDocuments(filter)]);

@@ -14,12 +14,18 @@ const router = Router();
 
 router.get(
   '/dashboard/summary',
+  // Why: A single endpoint serves both apps; header selects admin vs user summary shape.
+  // Behavior: Admin dashboard focuses on governance metrics and recent activity, while user dashboard focuses on business inventory/customer totals.
   requireAuth,
+  // requirePermission for 'dashboard:view' ensures that only users with explicit permission can access the dashboard summary, which may contain sensitive information and should not be exposed to all authenticated users by default.
   requirePermission('dashboard:view'),
+  // 
   asyncHandler(async (req, res) => {
+    // Why: A single endpoint serves both apps; header selects admin vs user summary shape.
     const isAdminPanel = req.header('x-app-context') === 'admin';
 
     if (isAdminPanel) {
+      // Behavior: Admin dashboard focuses on governance metrics and recent activity.
       const [userCount, roleCount, recentAudit] = await Promise.all([
         User.countDocuments(),
         Role.countDocuments(),
@@ -28,6 +34,7 @@ router.get(
       return res.json({ success: true, data: { userCount, roleCount, recentAudit } });
     }
 
+    // Behavior: User dashboard focuses on business inventory/customer totals.
     const [products, categories, customers, shelves] = await Promise.all([
       Product.countDocuments(),
       Category.countDocuments(),
