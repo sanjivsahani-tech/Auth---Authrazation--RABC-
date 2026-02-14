@@ -7,6 +7,7 @@ import { useAuth } from '../auth/AuthProvider';
 const SUPER_ADMIN_ROLE = 'SuperAdmin';
 
 function mapEditRoleError(err) {
+  // Why: Server returns machine codes; UI converts them into actionable messages.
   const code = err?.response?.data?.code;
   if (code === 'ROLE_PROTECTED') return 'SuperAdmin user role cannot be changed';
   if (code === 'ROLE_ASSIGNMENT_INVALID') return 'Select exactly one role';
@@ -18,6 +19,7 @@ export default function UsersPage() {
   const qc = useQueryClient();
   const { user } = useAuth();
   const permissions = useMemo(() => new Set(user?.permissions || []), [user?.permissions]);
+  // Why: UI hides forbidden actions early, but API still enforces authorization.
   const canCreateUser = permissions.has('users:create');
   const canAssignRoles = permissions.has('roles:assign');
 
@@ -36,6 +38,7 @@ export default function UsersPage() {
   const createM = useMutation({
     mutationFn: (payload) => api.post('/users', payload),
     onSuccess: () => {
+      // Why: Fresh list is required because backend can transform persisted data.
       qc.invalidateQueries({ queryKey: ['users'] });
       setOpen(false);
       setForm({ name: '', email: '', phone: '', password: '', roleIds: [] });
@@ -48,6 +51,7 @@ export default function UsersPage() {
   const updateRoleM = useMutation({
     mutationFn: ({ userId, roleId }) => api.patch(`/users/${userId}/roles`, { roleIds: [roleId] }),
     onSuccess: () => {
+      // Risk: Not invalidating list can show old role data and confuse admins.
       qc.invalidateQueries({ queryKey: ['users'] });
       closeEditDialog();
     },
@@ -65,6 +69,7 @@ export default function UsersPage() {
   }
 
   function isSuperAdminUser(record) {
+    // Why: SuperAdmin user role changes are blocked by policy and backend protection.
     return (record.roleIds || []).some((role) => role?.name === SUPER_ADMIN_ROLE || roleNameMap.get(role?._id || role) === SUPER_ADMIN_ROLE);
   }
 
@@ -88,6 +93,7 @@ export default function UsersPage() {
       return;
     }
     const roleLabel = roleNameMap.get(selectedRoleId) || 'selected role';
+    // Why: Role assignment impacts permissions immediately and revokes active sessions.
     const ok = window.confirm(`Change role for ${editUser.email} to ${roleLabel}?`);
     if (!ok) return;
     updateRoleM.mutate({ userId: editUser._id, roleId: selectedRoleId });

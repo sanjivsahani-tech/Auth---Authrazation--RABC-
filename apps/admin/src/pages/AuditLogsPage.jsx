@@ -5,6 +5,7 @@ import { api } from '../api/client';
 export default function AuditLogsPage() {
   const { data } = useQuery({
     queryKey: ['audit-logs'],
+    // Why: Admin audit view is read-mostly; a simple list query keeps traceability visible.
     queryFn: async () => (await api.get('/audit-logs?limit=100')).data.data.items,
   });
 

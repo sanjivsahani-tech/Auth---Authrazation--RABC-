@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { api, configureApi } from '../api/client';
 
 const AuthContext = createContext(null);
+// Why: Namespaced storage key avoids collision with user app token key.
 const TOKEN_KEY = 'admin_access_token';
 
 export function AuthProvider({ children }) {
@@ -9,6 +10,7 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Why: Login/signup should share one path that updates auth state consistently.
   const persistAuth = useCallback((data) => {
     const accessToken = data?.accessToken;
     if (!accessToken) return;
@@ -50,6 +52,8 @@ export function AuthProvider({ children }) {
   }, []);
 
   useEffect(() => {
+    // Why: Client needs current token and refresh logic from React state.
+    // Behavior: On first 401, interceptor attempts refresh and retries the failed call.
     configureApi({
       tokenProvider: () => token,
       unauthorizedHandler: async () => {
@@ -70,6 +74,8 @@ export function AuthProvider({ children }) {
   }, [token, logout]);
 
   useEffect(() => {
+    // Why: Reloaded page needs to restore user profile from existing token.
+    // Risk: Skipping this check can leave stale tokens and broken permission UI.
     async function init() {
       if (!token) {
         setLoading(false);

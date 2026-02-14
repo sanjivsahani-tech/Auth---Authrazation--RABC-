@@ -26,6 +26,7 @@ import { api } from '../api/client';
 import { useAuth } from '../auth/AuthProvider';
 
 const SUPER_ADMIN_ROLE = 'SuperAdmin';
+// Why: Security-critical permissions are shown first to reduce misconfiguration risk.
 const ADMIN_ACCESS_MODULES = ['users', 'roles', 'permissions', 'audit', 'dashboard'];
 const BUSINESS_MODULES = ['categories', 'shelves', 'products', 'customers'];
 
@@ -65,6 +66,7 @@ export default function RolesPage() {
   });
 
   const grouped = useMemo(() => {
+    // Why: Permission matrix is module-based, so API list is normalized into module buckets.
     const groups = {};
     (permsQ.data || []).forEach((p) => {
       const [module] = p.split(':');
@@ -76,6 +78,7 @@ export default function RolesPage() {
   const selectedSet = useMemo(() => new Set(selected), [selected]);
 
   function addManyPermissions(perms) {
+    // Behavior: Set-based merge avoids duplicate permission keys in payload.
     setSelected((prev) => [...new Set([...prev, ...perms])]);
   }
 
@@ -85,6 +88,7 @@ export default function RolesPage() {
   }
 
   function toggleModuleSelectAll(perms, checked) {
+    // Why: Module-level bulk selection improves role setup speed for admins.
     if (checked) {
       addManyPermissions(perms);
       return;
@@ -104,6 +108,7 @@ export default function RolesPage() {
     const perms = grouped[module] || [];
     if (!perms.length) return null;
 
+    // Behavior: Indeterminate state communicates partial selection inside a module.
     const allSelected = perms.every((perm) => selectedSet.has(perm));
     const someSelected = perms.some((perm) => selectedSet.has(perm));
 
@@ -237,11 +242,13 @@ export default function RolesPage() {
               <Alert severity="info">No permissions found</Alert>
             ) : (
               <>
+                {/* Why: Access-control permissions are intentionally grouped first for safer setup. */}
                 <Typography variant="subtitle2">User Roles & Permissions</Typography>
                 <Grid container spacing={1}>
                   {ADMIN_ACCESS_MODULES.map((module) => renderModuleCard(module))}
                 </Grid>
                 <Divider sx={{ my: 1 }} />
+                {/* Why: Operational/business permissions are separated to reduce accidental broad grants. */}
                 <Typography variant="subtitle2">Business Permissions</Typography>
                 <Grid container spacing={1}>
                   {BUSINESS_MODULES.map((module) => renderModuleCard(module))}
